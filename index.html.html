@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Progression des compétences</title>
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#fff; --text:#1b1f24; --muted:#5d6670; --line:#e1e4e8;
+  --y1:#0a7d5a; --y1-soft:#e3f5ee; --y2:#1f5fbf; --y2-soft:#e4edfb; --y3:#8a2fa8; --y3-soft:#f4e6f9;
+  --crit:#b35c00; --crit-soft:#fff3e6;
+  --mark:#ffe58a;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171b; --surface:#1d2127; --text:#e9ecef; --muted:#9aa4ae; --line:#2e343c;
+    --y1:#3ccf99; --y1-soft:#163a2e; --y2:#6ea8ff; --y2-soft:#1a2b45; --y3:#d68cf0; --y3-soft:#35203f;
+    --crit:#ffb066; --crit-soft:#3a2a17;
+    --mark:#7a6516;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171b; --surface:#1d2127; --text:#e9ecef; --muted:#9aa4ae; --line:#2e343c;
+  --y1:#3ccf99; --y1-soft:#163a2e; --y2:#6ea8ff; --y2-soft:#1a2b45; --y3:#d68cf0; --y3-soft:#35203f;
+  --crit:#ffb066; --crit-soft:#3a2a17;
+  --mark:#7a6516;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 8px}
+h1{font-size:1.15rem;margin:0;line-height:1.25}
+h1 small{display:block;font-weight:400;color:var(--muted);font-size:.85rem}
+.years{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-bottom:10px}
+.ybtn{border:2px solid var(--line);background:var(--surface);color:var(--text);border-radius:12px;padding:10px 6px;font:inherit;font-weight:700;cursor:pointer;text-align:center;line-height:1.15}
+.ybtn span{display:block;font-weight:400;font-size:.78rem;color:var(--muted)}
+.ybtn[data-y="1"].on{background:var(--y1);border-color:var(--y1);color:#fff}
+.ybtn[data-y="2"].on{background:var(--y2);border-color:var(--y2);color:#fff}
+.ybtn[data-y="3"].on{background:var(--y3);border-color:var(--y3);color:#fff}
+.ybtn[data-y="all"].on{background:var(--text);border-color:var(--text);color:var(--surface)}
+.ybtn.on span{color:inherit;opacity:.85}
+.filters{display:flex;gap:8px;align-items:center;padding-bottom:12px}
+.search{flex:1;min-width:0;border:1.5px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:8px 14px;font:inherit;font-size:.92rem}
+.iconbtn{border:1.5px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 10px;font:inherit;font-size:.85rem;cursor:pointer;white-space:nowrap}
+main{padding:16px 0 40px}
+#list{--accent:var(--muted)}
+#list.y1,#detail.y1{--accent:var(--y1)} #list.y2,#detail.y2{--accent:var(--y2)} #list.y3,#detail.y3{--accent:var(--y3)}
+#detail{--accent:var(--text)}
+.grid{display:grid;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column}
+.ctitle{font-weight:700;margin:0 0 8px;font-size:.98rem}
+.num{color:var(--accent)}
+.levels{display:grid;gap:8px}
+.lvl{border-radius:10px;padding:9px 12px}
+.lvl b.tag{display:inline-block;font-size:.75rem;font-weight:800;padding:2px 8px;border-radius:999px;margin-bottom:4px;color:#fff}
+.lvl[data-y="1"]{background:var(--y1-soft)} .lvl[data-y="1"] .tag{background:var(--y1)}
+.lvl[data-y="2"]{background:var(--y2-soft)} .lvl[data-y="2"] .tag{background:var(--y2)}
+.lvl[data-y="3"]{background:var(--y3-soft)} .lvl[data-y="3"] .tag{background:var(--y3)}
+.lvl.empty{background:transparent;border:1.5px dashed var(--line);color:var(--muted);font-style:italic;font-size:.9rem}
+.lvl.empty .tag{background:var(--muted)!important}
+.lvl p{margin:0}
+.mode-year .lvl.focus p{font-size:1.08rem;font-weight:600}
+.mode-year .lvl:not(.focus){display:none}
+.mode-year .card.open .lvl:not(.focus){display:block;opacity:.7}
+.mode-year .card.open .lvl:not(.focus) p{font-size:.92rem}
+.foot{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:auto;padding-top:10px}
+.dots{display:flex;gap:6px}
+.dot{width:22px;height:6px;border-radius:3px;background:var(--line)}
+.dot.has[data-y="1"]{background:var(--y1)} .dot.has[data-y="2"]{background:var(--y2)} .dot.has[data-y="3"]{background:var(--y3)}
+.dot.cur{outline:2px solid var(--text);outline-offset:1px}
+.mode-all .dots{display:none}
+.toggle{border:none;background:none;color:var(--muted);font:inherit;font-size:.82rem;cursor:pointer;text-decoration:underline;padding:2px}
+.mode-all .toggle{display:none}
+.critbtn{margin-left:auto;border:1.5px solid var(--crit);background:var(--crit-soft);color:var(--crit);border-radius:999px;padding:6px 12px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.critbtn:hover{background:var(--crit);color:var(--surface)}
+.pn button[disabled]{visibility:hidden}
+.hit{font-size:.78rem;color:var(--crit);font-weight:600}
+@media (min-width:860px){
+  .mode-year .grid{grid-template-columns:1fr 1fr}
+  .mode-all .levels{grid-template-columns:repeat(3,1fr)}
+  .mode-year .card.open{grid-column:1/-1}
+  .mode-year .card.open .levels{grid-template-columns:repeat(3,1fr)}
+}
+/* ===== 2e niveau : fiche compétence ===== */
+#detail[hidden],#listwrap[hidden]{display:none}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.back{border:none;background:var(--text);color:var(--surface);border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.pn{margin-left:auto;display:flex;gap:6px}
+.dhead{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.dhead h2{margin:0 0 6px;font-size:1.2rem;line-height:1.3}
+.ref{margin:0;color:var(--muted);font-size:.88rem}
+.ref b{font-weight:600}
+.dlevels{display:grid;gap:8px;margin-top:12px}
+@media (min-width:760px){.dlevels{grid-template-columns:repeat(3,1fr)}}
+.dlevels .lvl{opacity:.55}
+.dlevels .lvl.focus{opacity:1;box-shadow:0 0 0 2px var(--accent) inset}
+.dlevels .lvl.focus p{font-weight:600}
+.allyears .dlevels .lvl{opacity:1}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.sec h3,.sec .h3{font-weight:700;margin:0 0 4px;font-size:1.02rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.count{background:var(--crit);color:var(--surface);border-radius:999px;font-size:.75rem;padding:1px 9px;font-weight:800}
+.sec .src{margin:0 0 10px;color:var(--muted);font-size:.8rem}
+ol.crit{margin:0;padding:0;list-style:none;counter-reset:c;display:grid;gap:6px}
+ol.crit li{counter-increment:c;display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;background:var(--crit-soft)}
+ol.crit li::before{content:counter(c);flex:none;width:24px;height:24px;border-radius:50%;background:var(--crit);color:var(--surface);font-weight:800;font-size:.8rem;display:grid;place-items:center;margin-top:1px}
+ul.ind{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+ul.ind li{padding:6px 0 6px 18px;position:relative;border-bottom:1px solid var(--line);font-size:.94rem}
+ul.ind li:last-child{border-bottom:none}
+ul.ind li::before{content:"";position:absolute;left:4px;top:14px;width:6px;height:6px;border-radius:50%;background:var(--crit)}
+details summary{cursor:pointer;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary .h3::after{content:"▸ afficher";margin-left:auto;font-size:.8rem;font-weight:600;color:var(--crit)}
+details[open] summary h3::after{content:"▾ masquer"}
+details[open] summary{margin-bottom:8px}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.none{text-align:center;color:var(--muted);padding:40px 0;display:none}
+.legend{font-size:.8rem;color:var(--muted);margin:0 0 14px}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:.75rem;background:var(--surface)}
+@media (max-width:520px){
+  .ybtn{padding:8px 2px;font-size:.92rem}
+  .ybtn span{font-size:.7rem}
+  .hide-sm{display:none}
+  .critbtn{margin-left:0}
+}
+@media print{
+  header{position:static;box-shadow:none}
+  .filters,.toggle,.legend,.critbtn,.nav{display:none}
+  .card,.sec li{break-inside:avoid}
+  details>*{display:block}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>Progression des compétences sur les trois années de formation
+        <small>Outil d'aide à l'encadrement des étudiants infirmiers</small></h1>
+      <button class="iconbtn" id="theme" title="Changer le thème">◐<span class="hide-sm"> Thème</span></button>
+    </div>
+    <div class="years" role="tablist" aria-label="Année de formation">
+      <button class="ybtn" data-y="1">1A<span>1re année</span></button>
+      <button class="ybtn" data-y="2">2A<span>2e année</span></button>
+      <button class="ybtn" data-y="3">3A<span>3e année</span></button>
+      <button class="ybtn" data-y="all">Tout<span>3 années</span></button>
+    </div>
+    <div class="filters">
+      <input class="search" id="q" type="search" placeholder="Mot-clé (6 premières lettres prises en compte)" aria-label="Rechercher">
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="listwrap">
+    <p class="legend">Raccourcis clavier : <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pour l'année, <kbd>0</kbd> pour tout afficher, <kbd>/</kbd> pour rechercher. Bouton <b>Critères d'évaluation</b> sur chaque compétence pour ouvrir sa fiche (<kbd>Échap</kbd> pour revenir, <kbd>←</kbd> <kbd>→</kbd> pour changer de compétence). La recherche porte aussi sur les critères et compare le début des mots sur leurs 6 premières lettres (« transmission » ne trouve pas « transfusion »).</p>
+    <div id="list"></div>
+    <p class="none" id="none">Aucune compétence ne correspond à la recherche.</p>
+  </div>
+  <div id="detail" hidden></div>
+</main>
+
+<script>
+/* t = intitulé (progression par année), l = niveaux par année,
+   r = intitulé complet du référentiel (portfolio),
+   s = synthèse des critères d’évaluation (grille du portfolio),
+   d = critères d’évaluation détaillés (référentiel d’activités, de compétences et d’évaluation) */
+const ITEMS = [
+ {n:1, t:"Elaborer un diagnostic infirmier",
+  l:{1:"Mettre en œuvre un jugement clinique dans le cadre de situations de soins simples ou stabilisées",
+     2:"Mettre en œuvre un jugement clinique dans le cadre de situations de soins simples ou complexes stabilisées",
+     3:"Mettre en œuvre un jugement clinique dans un environnement complexe et/ou spécifique"},
+  r:"Élaborer le diagnostic infirmier pour une personne ou un groupe de personnes afin d’identifier les interventions adaptées à mettre en œuvre",
+  s:["Pertinence des informations et des données recueillies au regard d’une situation donnée",
+     "Cohérence des informations et des données recueillies avec la situation de la personne ou du groupe de personnes",
+     "Pertinence de l’analyse des données et de leur confrontation aux données probantes",
+     "Pertinence et qualité du bilan de situation"],
+  d:["La prise de contact et la posture professionnelle sont adaptées à la personne en respectant sa dignité.",
+     "La communication permet une relation soignant-soigné symétrique.",
+     "Toutes les données (somatiques, psychologiques, émotionnelles et comportementales, cliniques et paracliniques) sont recherchées auprès de la personne, de l’entourage et par autres sources d’information par exemple : dossiers, outils de transmission.",
+     "Le recueil des informations est réalisé dans le respect de la déontologie et des règles professionnelles.",
+     "Toutes les données dans le champ scientifique sont recherchées à l’aide de publications scientifiques et/ou professionnelles actualisées. Une vérification de leur fiabilité et leur pertinence est réalisée au regard de la situation.",
+     "Les données recueillies sont analysées et confrontées aux données connues issues de publications scientifiques et/ou professionnelles en sciences infirmières et pluridisciplinaires en vigueur.",
+     "Les écarts entre les normes et les données recueillies sont mesurés et les résultats anormaux sont identifiés.",
+     "L’évaluation du degré d’autonomie ou de dépendance, des ressources et des potentialités d’une personne ou d’un groupe de personnes, des réactions d'adaptation du comportement relationnel et social, des situations de fragilité, de vulnérabilité, de violence est réalisée à l’aide de méthodologie et d’outils adaptés à la situation et est explicitée.",
+     "Les informations sélectionnées sont organisées, synthétisées et priorisées.",
+     "Le diagnostic de situation s’appuie sur un raisonnement clinique justifié, une analyse pertinente des différentes informations (hypothèses diagnostic, problématiques de santé), et sur la mise en relation de l’ensemble des éléments recueillis.",
+     "Les propositions d’interventions sont identifiées et justifiées."]},
+ {n:2, t:"Définir les interventions à mener",
+  l:{1:"Identifier les interventions à mener dans le cadre de situations de soins simples ou stabilisées",
+     2:"Définir les interventions à mener dans le cadre de situations de soins simples ou complexes stabilisées",
+     3:"Définir les interventions à mener dans un environnement complexe et/ou spécifique"},
+  r:"Définir les interventions à mener auprès d’une personne ou d’un groupe de personnes dans le respect de la déontologie et de l’éthique professionnelle, et dans le cadre d’une co-construction, afin de répondre aux problématiques identifiées",
+  s:["Adéquation du projet de soins et de sa planification avec la situation, les besoins de la personne et les ressources",
+     "Rigueur et exhaustivité de la formalisation du projet de soins",
+     "Pertinence dans l’identification des priorités et des risques",
+     "Adéquation des interventions proposées avec les besoins et les attentes de la personne",
+     "Pertinence de la présentation et de l’explication du projet de soins à la personne, la personne de confiance, au groupe de personnes",
+     "Justesse dans la recherche du consentement et du degré d’adhésion de la personne ou de la personne de confiance"],
+  d:["Le projet de soins prend en compte les informations recueillies sur toutes les dimensions de la situation et des besoins de la personne.",
+     "Le projet est formalisé selon une configuration adaptée à la situation et comporte des objectifs, des actions et des modes d’évaluation.",
+     "Les interventions sont en adéquation avec le contexte et les ressources.",
+     "Les risques sont identifiés et pris en compte dans l’identification des actions à réaliser.",
+     "Les choix et les priorités du projet sont expliqués et justifiés.",
+     "Le projet de soins est présenté, explicité et négocié à la personne, le cas échéant à la personne de confiance et au groupe de personnes à l’aide d’un vocabulaire ou de toute autre méthode permettant leur compréhension.",
+     "L’accord et le consentement de la personne ou de la personne de confiance sont recueillis.",
+     "Des alternatives au projet sont suggérées le cas échéant."]},
+ {n:3, t:"Réaliser des soins à visée de dépistage, préventive, diagnostique, thérapeutique, palliative",
+  l:{1:"Réaliser des soins dans le cadre de situations de soins simples ou stabilisées - Intégrant les éléments de compétences : Mettre en œuvre des soins courants dits \"de la vie quotidienne\"",
+     2:"Réaliser des soins dans le cadre de situations de soins simples ou complexes stabilisées - Intégrant les éléments de compétences : Mettre en œuvre des soins courants dits \"de la vie quotidienne\"",
+     3:"Réaliser des soins dans un environnement complexe et/ou spécifique - Intégrant les éléments de compétences : Mettre en œuvre des soins courants dits \"de la vie quotidienne\""},
+  r:"Réaliser des soins à visée de dépistage préventif, diagnostique, thérapeutique, palliative pour une personne ou un groupe de personnes dans le cadre en particulier d’une consultation infirmière et dans le respect des règles QHSSE, des procédures et des protocoles et en utilisant des données probantes afin d’assurer un projet de soin adapté à la situation identifiée",
+  s:["Rigueur et cohérence dans l’organisation et la planification des soins",
+     "Pertinence et cohérence des modalités de réalisation de soins courants de la vie quotidienne",
+     "Justesse des modalités de mise en œuvre des soins et de réalisation des examens et conformité à la réglementation, à la déontologie, aux règles d’hygiène et de prévention des risques professionnels",
+     "Exactitude du calcul de dose",
+     "Mise en œuvre de soins écoresponsables et durables",
+     "Conformité de la mise en œuvre des soins avec la prescription et la réglementation",
+     "Adéquation de la communication et de la posture professionnelle dans le respect et la dignité de la personne",
+     "Justesse et conformité de l’utilisation des appareillages et dispositifs médicaux aux bonnes pratiques",
+     "Pertinence de la surveillance de la personne et du suivi thérapeutique",
+     "Pertinence dans l’identification des risques et adéquation des mesures de prévention",
+     "Pertinence de l’analyse de la conformité, la qualité et l’efficience des soins et de la mise en œuvre d’actions correctives",
+     "Pertinence des interventions en situation d’urgence",
+     "Fiabilité et pertinence des données de traçabilité"],
+  d:["Les objectifs des soins à visée préventive, à visée diagnostique, à visée thérapeutique, à visée palliative, des soins visant à la santé psychologique ou mentale, des soins relationnels, toutes actions ou interventions sont expliquées à la personne et à son entourage le cas échéant.",
+     "Les soins et leur organisation sont négociés avec la personne soignée et son entourage le cas échéant.",
+     "Le consentement et le degré d’adhésion de la personne sont recueillis et tracés le cas échéant.",
+     "L’organisation des soins et interventions et leur planification prennent en compte le contexte et les aléas, sont adaptées à la situation.",
+     "Les interventions sont réalisées, à l’aide d’outils numériques, de matériels, de dispositifs médicaux, de médicaments appropriés dans le strict respect de la réglementation, des procédures et protocoles, de la prescription médicale ou d’auxiliaire en pratique avancée, des règles de qualité, de sécurité, d’hygiène et d’asepsie et dans le respect de la personne.",
+     "La concordance et la pertinence du soin à la personne sont analysées au regard de la prescription et de la situation.",
+     "La communication et la posture professionnelle sont adaptées à la relation soignant-soigné et vise au respect et à la dignité de la personne.",
+     "Les risques liés à la situation sont expliqués et les moyens permettant de les éviter sont mis en œuvre (ergonomie et sécurité des interventions).",
+     "Le confort de la personne, son bien-être sont pris en compte lors de chaque soin.",
+     "L’évaluation de la douleur est réalisée tout au long du soin avec des outils de mesure adaptés.",
+     "Les moyens et les méthodes permettant d’assurer le confort, le bien-être et le respect de la personne sont mis en œuvre dans toute intervention.",
+     "La surveillance des paramètres et de l’évolution de l’état de santé globale de la personne est réalisée pendant toute l’intervention.",
+     "La conformité, la qualité et l’efficience des soins réalisés sont évaluées à l’aide de grilles et outils adaptés à la situation.",
+     "Tout évènement indésirable, toute anomalie, dysfonctionnement sont détectés et signalés.",
+     "Des axes d’amélioration, adaptations, actions correctives pertinents au regard de la situation sont proposés et mises en œuvre le cas échéant.",
+     "La synthèse des informations concernant les soins est ordonnée, exhaustive et en adéquation avec les soins réalisés.",
+     "La traçabilité des soins et des interventions est réalisée à l’aide des outils sécurisés et des documents appropriés et dans le respect de la confidentialité et de la déontologie professionnelle et est conforme aux règles de bonnes pratiques.",
+     "Les risques de l’usage de l’outil numérique sont repérés et le cas échéant, les anomalies sont signalées.",
+     "Les situations d’urgence et de crise sont repérées et les mesures d’urgence appropriées sont mises en œuvre dans le respect des procédures d’urgence et de collaboration définies et sont expliquées.",
+     "L’état de santé des personnes, les symptômes et les paramètres sont suivis et analysés à l’aide d’outils et de grilles appropriés.",
+     "Le comportement des personnes soignées et des équipes soignantes est observé lors de toute intervention."]},
+ {n:4, t:"Prescrire des produits de santé et des examens complémentaires",
+  l:{2:"Identifier les principes et les éléments à préciser dans le cadre d’une prescription",
+     3:"Prescrire des produits de santé et des examens complémentaires"},
+  r:"Prescrire des produits de santé (médicaments, dispositifs médicaux) et des examens complémentaires afin d’assurer un traitement et un suivi adapté à la situation clinique d’une personne dans le domaine des soins infirmiers",
+  s:["Pertinence du renouvellement, de l’adaptation et de la rédaction des prescriptions de produits de santé et d’examens complémentaires",
+     "Pertinence de l’analyse des prescriptions",
+     "Pertinence dans l’identification des risques liés aux produits prescrits",
+     "Pertinence de l’orientation de la personne vers un autre professionnel de santé"],
+  d:["La rédaction de prescriptions de produits de santé et d’examens complémentaires est pertinente au regard de la situation de la personne soignée.",
+     "Les libellés des prescriptions sont adaptés à la personne et basés sur les recommandations scientifiques en vigueur.",
+     "Les risques liés aux produits prescrits sont pris en compte dans toute prescription en y incluant le risque iatrogénique.",
+     "Le support de prescription est conforme à la réglementation.",
+     "Les prescriptions sont analysées, les ajustements sont réalisés le cas échéant."]},
+ {n:5, t:"Concevoir et conduire une démarche de promotion/éducation à la santé",
+  l:{1:"Identifier les priorités de santé publique, les étapes et les méthodes de mise en œuvre d'une démarche de promotion de la santé, d'éducation à la santé, en santé communautaire et populationnelle",
+     2:"Concevoir et conduire une démarche de promotion de la santé, d'éducation à la santé, en santé communautaire et populationnelle"},
+  r:"Concevoir et conduire une démarche de promotion de la santé, d’éducation à la santé, en santé communautaire et populationnelle afin de répondre aux besoins de santé publique",
+  s:["Pertinence de l’analyse des besoins et des demandes spécifiques des personnes et des populations",
+     "Pertinence de la démarche de promotion de la santé (type d’actions, coordination)",
+     "Adéquation des techniques, des supports et des outils pédagogiques mises en œuvre à la situation",
+     "Pertinence de la méthode et des outils d’évaluation de la démarche et des actions correctives"],
+  d:["Les besoins et les demandes spécifiques des personnes et des populations sont repérés, et prennent en compte des données analysées, issues des recommandations et des plans de santé publique actualisés dans la conception de tout projet en lien avec la santé publique.",
+     "Des actions de prévention à mettre en œuvre sont identifiées et expliquées et permettent de répondre aux besoins de populations ciblées.",
+     "Les actions individuelles ou collectives d’éducation pour la santé et la prévention mettent en œuvre des techniques, des supports et outils pédagogiques adaptés à la population visée.",
+     "Les techniques d’animation pédagogiques sont adaptées et ciblées.",
+     "La participation active des personnes est recherchée.",
+     "Les actions coordonnées avec des partenaires pluriprofessionnels sont organisées et suivies.",
+     "Les actions réalisées sont évaluées à l’aide d’outils adaptés afin de vérifier leur pertinence et la satisfaction des personnes concernées.",
+     "Des réajustements ou actions correctives sont proposés et mis en œuvre."]},
+ {n:6, t:"Concevoir, conduire et co-construire une démarche d’éducation thérapeutique, de prévention, de dépistage et de repérage",
+  l:{1:"Identifier les étapes et l’organisation d’une démarche d’éducation thérapeutique, de prévention, de dépistage et de repérage notamment dans le cadre d'une consultation infirmière",
+     2:"Concevoir et conduire une démarche d’éducation thérapeutique, de prévention, de dépistage et de repérage notamment dans le cadre d'une consultation infirmière (…)"},
+  r:"Concevoir, conduire une démarche d’éducation thérapeutique, de prévention, de dépistage et de repérage en co-construction avec la personne notamment dans le cadre d’une consultation infirmière",
+  s:["Adéquation de la conception de démarche et/ou du projet d’éducation thérapeutique avec l’analyse de la situation",
+     "Pertinence de mise en œuvre de la démarche d’éducation thérapeutique, de prévention, de dépistage et de repérage et conformité aux bonnes pratiques",
+     "Adéquation de la communication et de la posture professionnelle avec la personne et son entourage dans le respect et la dignité de la personne.",
+     "Adéquation des techniques, des supports et des outils pédagogiques mises en œuvre à la situation",
+     "Pertinence de la méthode et des outils d’évaluation de la démarche et des actions correctives",
+     "Pertinence de l’orientation de la personne vers un autre professionnel de santé"],
+  d:["Les besoins et les demandes de la personne sont repérés, analysés et pris en compte dans la conception de tout projet.",
+     "Les ressources de la personne sont identifiées et mobilisées, et son consentement est recueilli.",
+     "Les conditions propices à la communication interpersonnelle sont mises en œuvre.",
+     "La démarche d’accompagnement, d’éducation thérapeutique de prévention et de dépistage est adaptée à la situation de la personne.",
+     "La personne est prise en compte dans la mise en œuvre de l’intervention et est mobilisée en tant qu’actrice de la démarche.",
+     "La communication prend en compte l’expression, la situation socio-culturelle et le contexte de vie de la personne.",
+     "Le langage professionnel et les modes de communication (verbal, non verbal, paraverbal) sont adaptés à la personne.",
+     "Des médiateurs en santé sont associés le cas échéant.",
+     "La posture professionnelle est adaptée à la relation soignant-soigné et vise au respect et à la dignité de la personne.",
+     "La participation active de la personne, le développement de ses compétences en matière de santé et d’autosoins sont recherchés.",
+     "Les techniques, les supports et les outils pédagogiques utilisés sont adaptés et leur utilisation, évaluée.",
+     "Tout risque lié à la mise en œuvre de démarche d’éducation thérapeutique, de prévention, de dépistage et de repérage est anticipé et les moyens de prévention sont mis en œuvre.",
+     "Les interventions réalisées sont évaluées à l’aide d’outils et indicateurs adaptés.",
+     "La satisfaction de la personne est recueillie.",
+     "Des ajustements et des interventions correctives sont suggérés et le cas échéant, sont mis en œuvre."]},
+ {n:7, t:"Concevoir et conduire des actions d’éducation à la santé environnementale",
+  l:{1:"Analyser des données issues des recommandations et des productions",
+     2:"Conduire une démarche et des actions de communication et d’éducation",
+     3:"Concevoir et conduire une démarche et des actions de communication et d’éducation"},
+  r:"Concevoir et conduire des projets et la promotion d’actions de communication et d’éducation des communautés et des organisations sur les enjeux environnementaux, les pratiques et gestes durables et éco-responsables afin de répondre aux problématiques de développement durable et de gestion des ressources naturelles",
+  s:["Adéquation de la conception de démarche et des actions de communication et d’éducation des communautés et des organisations avec l’analyse de la situation (besoins et attentes spécifiques) et les enjeux environnementaux",
+     "Pertinence de mise en œuvre des actions de communication et d’éducation des communautés et des organisations au regard de la situation",
+     "Pertinence de l’organisation et de la coordination des actions"],
+  d:["Les besoins et les demandes spécifiques des personnes et des populations sont repérés, analysés et pris en compte dans la conception de tout projet en lien avec les enjeux environnementaux, les pratiques durables, et les gestes éco-responsables.",
+     "Des actions de communication et d’éducation des communautés et des organisations sur les enjeux environnementaux, les pratiques durables, et les gestes éco-responsables à mettre en œuvre sont identifiées et expliquées et permettent de répondre aux besoins de populations ciblées.",
+     "Le langage professionnel et les modes de communication (verbal, non verbal) sont adaptés au groupe de personnes.",
+     "Les actions coordonnées avec l’ensemble des partenaires notamment de santé sont organisées et suivies.",
+     "Les actions réalisées sont évaluées à l’aide d’outils adaptés afin de vérifier leur pertinence et la satisfaction des personnes est recherchée.",
+     "Des réajustements ou actions correctives sont proposés et mises en œuvre"]},
+ {n:8, t:"Gérer ou organiser une structure d’exercice individuel ou collectif en optimisant les ressources",
+  l:{2:"Identifier les aspects réglementaires et assurer le suivi des stocks au sein d’une structure d’exercice",
+     3:"Proposer la gestion et l’organisation d’une structure d’exercice"},
+  r:"Gérer ou organiser une structure d’exercice individuel ou collectif en optimisant les ressources",
+  s:["Conformité à la réglementation de l’organisation de l’espace professionnel et du plateau technique, et de la gestion des stocks de matériels, des consommables et des déchets",
+     "Pertinence de la gestion logistique de la structure, des plannings et des rendez-vous",
+     "Pertinence du traitement des dysfonctionnements",
+     "Conformité des sauvegardes et de l’archivage des données à la réglementation"],
+  d:["Le fonctionnement d’une structure est expliqué et le projet de création est argumenté (analyse de la situation et des besoins, objectifs de la création d’une structure, modalités de mise en œuvre)",
+     "Le matériel choisi correspond aux besoins et activités des infirmiers.",
+     "L’espace professionnel et le plateau technique sont organisés dans le respect des autorisations, des normes, des normes environnementales, de la réglementation et des objectifs d’hygiène, de sécurité et d’accessibilité.",
+     "Les règles de gestion des matériels et des consommables (DM) et la gestion des déchets sont appliquées et expliquées.",
+     "Les conditions de stockage sont respectées.",
+     "La mise en sécurité de tout ou partie de l’installation est réalisée.",
+     "Les opérations de gestion des équipements et du matériel sont réalisées conformément aux procédures techniques (contrôle de la conformité et du fonctionnement, opérations de maintenance).",
+     "Les dysfonctionnements des matériels et équipements sont identifiés et les actions correctives sont mises en œuvre.",
+     "Les risques associés sont identifiés et les mesures de prévention sont prises.",
+     "Les sauvegardes quotidiennes sont réalisées.",
+     "Les archivages sont réalisés en respectant les procédures.",
+     "Les règles de gestion de la structure et des plannings sont mises en œuvre pour permettre un fonctionnement optimisé de la structure."]},
+ {n:9, t:"Organiser les activités de soins en transmettant et en recevant des informations et données",
+  l:{1:"Organiser son activité afin de développer la coopération au sein de l’équipe pluriprofessionnelle",
+     2:"Organiser les activités de soins en transmettant et recevant des informations",
+     3:"Organiser les activités de soins en transmettant et en recevant des informations et en s’adaptant au contexte et situations d’urgence"},
+  r:"Organiser les activités de soins en transmettant et recevant des informations et données en lien avec la personne en utilisant les outils numériques, aux membres d’une équipe pluri professionnelle dans un but de collaboration et de continuité de soins",
+  s:["Pertinence de l’identification et de la prise en compte du champ d’intervention des différents acteurs",
+     "Cohérence de l’organisation des activités de soins dans le cadre de la continuité des soins",
+     "Qualité et adaptation de la mise en œuvre d’une communication aux personnes soignées et leur entourage",
+     "Fiabilité et pertinence des informations transmises",
+     "Respect des règles liées à la sécurité numérique et à la réglementation relatives aux données de santé"],
+  d:["Les liens entre les différentes interventions professionnelles sont repérés et explicités.",
+     "L’organisation de ses activités permet d’optimiser le travail en équipe et s’adapte aux changements, elle est expliquée et argumentée.",
+     "Les activités sont hiérarchisées, priorisées et argumentées.",
+     "Les outils d’organisation individuelle du travail sont utilisés à bon escient en respectant les règles professionnelles.",
+     "Les autres professionnels de santé sont sollicités à bon escient.",
+     "La réponse aux autres professionnels de santé est adaptée.",
+     "La coordination entre les professionnels est assurée.",
+     "Toutes les données recueillies (observation et mesures) sont fiables et conformes.",
+     "Les données organisées et hiérarchisées sont exploitables.",
+     "L’évaluation du risque, du danger ou de l’urgence est réalisée.",
+     "Les données respectent la réglementation en vigueur.",
+     "Les données respectent la protection de la personne et le secret professionnel.",
+     "Les anomalies ou les incohérences sont ciblées.",
+     "Les outils numériques, les bases de données et les logiciels métiers sont utilisés dans le respect de la personne, des règles liées à la sécurité numérique et la réglementation relative aux données de santé.",
+     "Le vocabulaire utilisé est adapté aux interlocuteurs et à la situation."]},
+ {n:10, t:"Accompagner les pairs, apprenants et autres professionnels",
+  l:{1:"Identifier les étapes, techniques et méthodes permettant le développement et l’évaluation des compétences",
+     2:"Réaliser l’accueil et l’intégration des nouveaux apprenants",
+     3:"Réaliser l’accueil, l’intégration, l’accompagnement et l’évaluation des pairs, apprenants et autres professionnels"},
+  r:"Accompagner les pairs, les apprenants et les autres professionnels, afin de permettre leur accueil et leur formation et le développement de leurs compétences, dans le respect des personnes et en tenant compte de leurs éventuels besoins spécifiques",
+  s:["Qualité de l’accueil des professionnels et personnes en formation",
+     "Qualité des actions de formation, de la transmission de savoir-faire et des échanges avec les professionnels et personnes en formation",
+     "Qualité de l’évaluation de l’atteinte des objectifs et des actes et activités réalisés par les professionnels et personnes en formation"],
+  d:["Une démarche d’accueil organisationnel et pédagogique est formalisée et mise en œuvre et les informations nécessaires sont transmises.",
+     "Les missions des différents acteurs de l’accompagnement de l’apprenant (tuteur, professionnel de proximité et maître de stage) sont identifiées et prises en compte.",
+     "Les échanges avec l’apprenant contribuent à atteindre les objectifs de son apprentissage.",
+     "Des points d’étape (bilan intermédiaire) sont programmés et réalisés pour permettre la progression et le développement des compétences.",
+     "La transmission de compétences est assurée avec une pédagogie adaptée à l’apprenant.",
+     "Les acquis de l’apprenant sont appréciés à l’aide des outils d’évaluation des compétences standardisés."]},
+ {n:11, t:"Mettre en œuvre le processus d’amélioration continue des soins et de sa pratique professionnelle",
+  l:{1:"Identifier et mettre en œuvre les méthodologies et outils d’évaluation",
+     2:"Proposer une démarche d’amélioration continue de la qualité dans son activité",
+     3:"Mettre en œuvre le processus d’amélioration continue des soins et de sa pratique professionnelle"},
+  r:"Mettre en œuvre le processus d’amélioration continue des soins et de sa pratique professionnelle dans le cadre de ses activités",
+  s:["Pertinence dans la démarche d’analyse critique d’une situation de travail contribuant à l’amélioration continue de la qualité",
+     "Conformité des pratiques aux principes et règles de vigilance",
+     "Pertinence de l’analyse des non-conformités, des évènements indésirables et des mesures correctives proposées",
+     "Qualité de l’analyse de ses changements de comportement dans le cadre de son activité"],
+  d:["La démarche d’analyse et le raisonnement sont formalisés et logiques dans le cadre d’une démarche qualité.",
+     "Les difficultés et les erreurs sont identifiées au regard de l’ensemble des exigences.",
+     "Les causes sont analysées.",
+     "Les améliorations et des actions préventives sont proposées.",
+     "Les principes et règles de vigilance sont expliqués.",
+     "Tout événement indésirable est signalé à l’interlocuteur approprié et fait l’objet d’une traçabilité à l’aide d’un support validé.",
+     "Les non-conformités et les évènements indésirables sont identifiés et caractérisés.",
+     "La méthode de recherche des causes est logique et pertinente.",
+     "Les changements de son comportement et son état de santé sont analysés et les causes sont identifiées.",
+     "Les mesures correctives et curatives proposées sont adaptées à la situation et justifiées."]},
+ {n:12, t:"Analyser des données scientifiques et professionnelles afin d’optimiser sa pratique, son expertise, la qualité, la sécurité des activités et d’inscrire sa pratique dans une démarche scientifique",
+  l:{1:"Rechercher et sélectionner des publications scientifiques et professionnelles",
+     2:"Rechercher et traiter des données contenues dans les publications scientifiques et professionnelles et les différentes ressources documentaires nationales et internationales (lecture critique)",
+     3:"Analyser des données scientifiques et professionnelles dont rechercher, analyser, synthétiser et utiliser les données probantes nécessaires à sa pratique"},
+  r:"Analyser des données scientifiques et professionnelles afin d’optimiser sa pratique et son expertise professionnelle, la qualité et la sécurité des activités réalisées",
+  s:["Pertinence des données recherchées et sélectionnées dans les publications scientifiques et professionnelles et les différentes ressources documentaires",
+     "Qualité du questionnement et pertinence de l’analyse de la pratique professionnelle",
+     "Pertinence de l’identification des enjeux liés à la santé numérique dans les domaines des données de santé, cyber sécurité, communication en santé, outils numériques, télésanté",
+     "Pertinence de l’évaluation des besoins en développement de compétences / en formation",
+     "Pertinence de la mise en œuvre des actions de développement des compétences"],
+  d:["Les données pertinentes sont recherchées et sélectionnées dans les documents professionnels et scientifiques en français et en anglais.",
+     "Les bases documentaires sont utilisées correctement et avec discernement, y compris les sources Internet.",
+     "Les principales fonctionnalités des outils numériques sont correctement utilisées.",
+     "Les éléments de l’environnement professionnel (éthique, système de santé, réglementation, recommandations des différentes instances) sont explicités et pris en compte.",
+     "Les pratiques sont confrontées à celles des pairs et autres professionnels de santé.",
+     "Les points forts et les difficultés sont identifiés.",
+     "Les difficultés sont analysées et des améliorations sont proposées.",
+     "Les besoins en formation sont repérés.",
+     "Les documents professionnels répondent à la problématique, aux normes et critères de présentation.",
+     "Les enjeux liés à la santé numérique dans les domaines des données de santé, cyber sécurité, communication en santé, outils numériques, télésanté sont expliqués.",
+     "Des éléments actualisés concernant la santé numérique sont recherchés.",
+     "Des actions de développement de compétences / formation sont conformes aux besoins identifiés.",
+     "Les compétences développées lors de ses actions sont évaluées et acquises."]},
+ {n:13, t:"Formaliser des documents professionnels dans le cadre d’une démarche scientifique d’amélioration continue des pratiques",
+  l:{1:"Elaborer des procédures et des modes opératoires (...) afin de garantir la qualité des interventions pour une situation simple",
+     2:"Elaborer des procédures et des modes opératoires (...) afin de garantir la qualité des interventions pour une situation complexe",
+     3:"Elaborer et évaluer des documents professionnels (...) dans le cadre d’une démarche d’amélioration continue des pratiques"},
+  r:"Formaliser des documents professionnels dans le cadre d’une démarche scientifique d’amélioration continue des pratiques professionnelles",
+  s:["Qualité des documents professionnels élaborés en concertation avec l’équipe et dans le respect de la démarche qualité (procédures, modes opératoires)"],
+  d:["L’élaboration de la procédure ou du mode opératoire est réalisé en concertation avec l’équipe.",
+     "La procédure ou le mode opératoire est adapté à la situation.",
+     "Les règles actualisées sont prises en compte.",
+     "La formalisation de la procédure ou du mode opératoire (déroulement, enchaînement des activités…) respecte la démarche qualité.",
+     "La procédure ou le mode opératoire est clair, compréhensible et exploitable",
+     "Les bilans et avis élaborés dans un cadre médico-administratif sont complets et permettent aux institutions de prendre des décisions et de recueillir des données de santé fiables."]}
+];
+
+const YLABEL = {1:"1re année",2:"2e année",3:"3e année"};
+const state = {year:"1", q:"", open:new Set(), comp:null};
+try{ const s=localStorage.getItem("pc-year"); if(s) state.year=s; }catch(e){}
+
+const esc = s => s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+// Recherche : chaque mot saisi est réduit à ses 6 premières lettres et ne correspond
+// qu'aux mots du texte qui COMMENCENT par ces lettres (transmission ≠ transfusion).
+const L = "a-z0-9œæ";
+function terms(){ return norm(state.q).split(new RegExp("[^"+L+"]+")).filter(Boolean).map(w=>w.slice(0,6)); }
+function wordRe(p){ return new RegExp("(^|[^"+L+"])("+p+"["+L+"]*)","g"); }
+function found(text, ts){ const n=norm(text); return ts.filter(p=>wordRe(p).test(n)); }
+function hl(text){
+  const ts = terms(); if(!ts.length) return esc(text);
+  const n = norm(text), ranges=[];
+  ts.forEach(p=>{ const re=wordRe(p); let m; while((m=re.exec(n))){ const s=m.index+m[1].length; ranges.push([s,s+m[2].length]); } });
+  if(!ranges.length) return esc(text);
+  ranges.sort((a,b)=>a[0]-b[0]);
+  let out="", i=0;
+  ranges.forEach(([s,e])=>{ if(s<i) return; out+=esc(text.slice(i,s))+"<mark>"+esc(text.slice(s,e))+"</mark>"; i=e; });
+  return out+esc(text.slice(i));
+}
+const allTexts = c => [c.t, c.r, ...Object.values(c.l), ...c.s, ...c.d];
+function matches(c, ts){
+  if(!ts.length) return true;
+  const f=new Set(); allTexts(c).forEach(v=>found(v,ts).forEach(p=>f.add(p)));
+  return ts.every(p=>f.has(p));
+}
+function critHits(c, ts){
+  if(!ts.length) return 0;
+  return [...c.s, ...c.d].filter(v=>found(v,ts).length).length;
+}
+
+function levelHTML(c, y, focus){
+  const txt=c.l[y];
+  return txt
+    ? `<div class="lvl${focus?" focus":""}" data-y="${y}"><b class="tag">${y}A · ${YLABEL[y]}</b><p>${hl(txt)}</p></div>`
+    : `<div class="lvl empty${focus?" focus":""}" data-y="${y}"><b class="tag">${y}A · ${YLABEL[y]}</b><p>Pas de niveau défini pour cette année</p></div>`;
+}
+
+function setYear(y){
+  state.year=y; state.open.clear();
+  try{ localStorage.setItem("pc-year", y); }catch(e){}
+  render();
+}
+document.querySelectorAll(".ybtn").forEach(b=>b.addEventListener("click",()=>setYear(b.dataset.y)));
+
+/* ===== 1er niveau : liste des compétences par année ===== */
+function renderList(){
+  const all = state.year==="all";
+  const list = document.getElementById("list");
+  list.className = all ? "mode-all" : "mode-year y"+state.year;
+  const ts = terms();
+  const items = ITEMS.filter(c=>matches(c,ts));
+  let html = `<div class="grid">`;
+  items.forEach(c=>{
+    const key="c"+c.n, open=state.open.has(key);
+    let lv=""; [1,2,3].forEach(y=>lv+=levelHTML(c,y,!all && String(y)===state.year));
+    const hits = critHits(c,ts);
+    html += `<article class="card${open?" open":""}">
+      <h3 class="ctitle"><span class="num">Compétence ${c.n}</span> : ${hl(c.t)}</h3>
+      <div class="levels">${lv}</div>
+      <div class="foot">
+        <span class="dots">${[1,2,3].map(y=>`<span class="dot${c.l[y]?" has":""}${String(y)===state.year?" cur":""}" data-y="${y}" title="${y}A"></span>`).join("")}</span>
+        <button class="toggle" data-k="${key}">${open?"Masquer la progression":"Voir la progression 1A → 3A"}</button>
+        ${hits?`<span class="hit">${hits} critère${hits>1?"s":""} correspond${hits>1?"ent":""}</span>`:""}
+        <button class="critbtn" data-c="${c.n}">Critères d'évaluation (${c.s.length}) →</button>
+      </div>
+    </article>`;
+  });
+  html += `</div>`;
+  list.innerHTML = html;
+  document.getElementById("none").style.display = items.length ? "none" : "block";
+}
+
+/* ===== 2e niveau : fiche compétence avec critères d'évaluation ===== */
+function renderDetail(){
+  const c = ITEMS.find(x=>x.n===state.comp);
+  const all = state.year==="all";
+  const el = document.getElementById("detail");
+  el.className = (all ? "allyears" : "y"+state.year);
+  const i = ITEMS.indexOf(c), prev=ITEMS[i-1], next=ITEMS[i+1];
+  const ts = terms();
+  const dHits = ts.length ? c.d.filter(v=>found(v,ts).length).length : 0;
+  let lv=""; [1,2,3].forEach(y=>lv+=levelHTML(c,y,!all && String(y)===state.year));
+  el.innerHTML = `
+    <div class="nav">
+      <button class="back" id="back">← Toutes les compétences</button>
+      <div class="pn">
+        <button class="iconbtn" ${prev?`data-go="${prev.n}"`:"disabled"} title="Compétence précédente">‹ C${prev?prev.n:""}</button>
+        <button class="iconbtn" ${next?`data-go="${next.n}"`:"disabled"} title="Compétence suivante">C${next?next.n:""} ›</button>
+      </div>
+    </div>
+    <section class="dhead">
+      <h2><span class="num">Compétence ${c.n}</span> : ${hl(c.t)}</h2>
+      <p class="ref"><b>Intitulé du référentiel :</b> ${hl(c.r)}</p>
+      <div class="dlevels">${lv}</div>
+    </section>
+    <section class="sec">
+      <h3>Critères d'évaluation <span class="count">${c.s.length}</span></h3>
+      <p class="src">Synthèse des critères d'évaluation de la grille du portfolio (bilan intermédiaire et bilan final : ANP / NA / AA / A)</p>
+      <ol class="crit">${c.s.map(v=>`<li><span>${hl(v)}</span></li>`).join("")}</ol>
+    </section>
+    <details class="sec" ${dHits?"open":""}>
+      <summary><div class="h3">Critères détaillés du référentiel <span class="count">${c.d.length}</span>${dHits?`<span class="hit">${dHits} correspond${dHits>1?"ent":""} à la recherche</span>`:""}</div></summary>
+      <p class="src">Colonne « Critères d'évaluation » du référentiel d'activités, de compétences et d'évaluation</p>
+      <ul class="ind">${c.d.map(v=>`<li>${hl(v)}</li>`).join("")}</ul>
+    </details>`;
+}
+
+function render(){
+  document.querySelectorAll(".ybtn").forEach(b=>{
+    const on=b.dataset.y===state.year; b.classList.toggle("on",on); b.setAttribute("aria-selected",on);
+  });
+  const inDetail = state.comp!==null;
+  document.getElementById("listwrap").hidden = inDetail;
+  document.getElementById("detail").hidden = !inDetail;
+  inDetail ? renderDetail() : renderList();
+}
+
+/* Navigation entre la liste et la fiche : gérée en mémoire uniquement
+   (pas d'ancre ni d'historique, qui plantent dans certains aperçus et navigateurs). */
+let listScroll = 0;
+function top0(y){ try{ window.scrollTo(0,y); }catch(err){} }
+function openComp(n){ if(state.comp===null) listScroll=window.scrollY||0; state.comp=n; render(); top0(0); }
+function closeComp(){ state.comp=null; render(); top0(listScroll); }
+
+document.getElementById("list").addEventListener("click", e=>{
+  const t=e.target.closest(".toggle");
+  if(t){ const k=t.dataset.k; state.open.has(k)?state.open.delete(k):state.open.add(k); render(); return; }
+  const b=e.target.closest(".critbtn"); if(b) openComp(+b.dataset.c);
+});
+document.getElementById("detail").addEventListener("click", e=>{
+  if(e.target.closest("#back")) return closeComp();
+  const g=e.target.closest("[data-go]"); if(g) openComp(+g.dataset.go);
+});
+
+const qi=document.getElementById("q");
+qi.addEventListener("input",()=>{state.q=qi.value.trim(); render();});
+document.addEventListener("keydown",e=>{
+  if(e.target===qi){ if(e.key==="Escape"){qi.value="";state.q="";render();qi.blur();} return; }
+  if(e.key==="1"||e.key==="2"||e.key==="3") setYear(e.key);
+  else if(e.key==="0") setYear("all");
+  else if(e.key==="/"){ e.preventDefault(); qi.focus(); }
+  else if(state.comp!==null){
+    const i=ITEMS.findIndex(c=>c.n===state.comp);
+    if(e.key==="Escape") closeComp();
+    else if(e.key==="ArrowLeft" && ITEMS[i-1]) openComp(ITEMS[i-1].n);
+    else if(e.key==="ArrowRight" && ITEMS[i+1]) openComp(ITEMS[i+1].n);
+  }
+});
+document.getElementById("theme").addEventListener("click",()=>{
+  const r=document.documentElement, dark = r.dataset.theme ? r.dataset.theme==="dark" : !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  r.dataset.theme = dark ? "light" : "dark";
+});
+render();
+</script>
+</body>
+</html>
